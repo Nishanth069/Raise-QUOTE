@@ -15,6 +15,8 @@ import {
 import Link from "next/link"
 import AdminCharts from "./AdminCharts"
 
+export const revalidate = 60 // Revalidate every 60 seconds for performance
+
 export default async function AdminDashboard() {
   const supabase = await createClient()
 
