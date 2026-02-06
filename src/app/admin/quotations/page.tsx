@@ -41,22 +41,29 @@ export default function QuotationsTrackingPage() {
   }, [])
 
   const fetchQuotations = async () => {
-    const { data, error } = await supabase
-      .from("quotations")
-      .select(`
-        id,
-        quotation_number,
-        customer_name,
-        grand_total,
-        created_at,
-        pdf_url,
-        profiles!created_by (full_name)
-      `)
-      .order("created_at", { ascending: false })
-    
-    if (error) toast.error(error.message)
-    else setQuotations(data as any)
-    setLoading(false)
+    try {
+      setLoading(true)
+      const { data, error } = await supabase
+        .from("quotations")
+        .select(`
+          id,
+          quotation_number,
+          customer_name,
+          grand_total,
+          created_at,
+          pdf_url,
+          profiles!created_by (full_name)
+        `)
+        .order("created_at", { ascending: false })
+        .limit(100) // Limit for performance
+      
+      if (error) throw error
+      setQuotations(data as any)
+    } catch (error: any) {
+      toast.error(error.message || "Failed to load quotations")
+    } finally {
+      setLoading(false)
+    }
   }
 
   const filteredQuotations = quotations.filter(
@@ -86,17 +93,18 @@ export default function QuotationsTrackingPage() {
       </div>
 
       <div className="rounded-xl border bg-white shadow-sm overflow-hidden">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Number</TableHead>
-              <TableHead>Customer</TableHead>
-              <TableHead>Salesperson</TableHead>
-              <TableHead>Amount</TableHead>
-              <TableHead>Date</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="whitespace-nowrap">Number</TableHead>
+                <TableHead className="whitespace-nowrap">Customer</TableHead>
+                <TableHead className="whitespace-nowrap">Salesperson</TableHead>
+                <TableHead className="whitespace-nowrap">Amount</TableHead>
+                <TableHead className="whitespace-nowrap">Date</TableHead>
+                <TableHead className="text-right whitespace-nowrap">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
           <TableBody>
             {loading ? (
               <TableRow>
@@ -153,6 +161,7 @@ export default function QuotationsTrackingPage() {
             )}
           </TableBody>
         </Table>
+        </div>
       </div>
     </div>
   )
