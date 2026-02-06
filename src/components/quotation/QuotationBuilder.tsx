@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useMemo } from "react"
+import { useState, useEffect, useMemo, useCallback } from "react"
 import { 
   Plus, 
   Trash2, 
@@ -170,7 +170,7 @@ export default function QuotationBuilder({ initialProducts, settings, user }: Qu
     return { subtotal, tax_amount, grand_total }
   }, [items, discount, settings?.tax_rate])
 
-  const addItem = (product: Product) => {
+  const addItem = useCallback((product: Product) => {
     const newItem: QuotationItem = {
       id: Math.random().toString(36).slice(2),
       product_id: product.id,
@@ -184,21 +184,21 @@ export default function QuotationBuilder({ initialProducts, settings, user }: Qu
       selectedAddons: product.addons ? product.addons.map(a => ({ name: a.name, price: a.price })) : [],
       specs: product.specs || []
     }
-    setItems([...items, newItem])
+    setItems(prev => [...prev, newItem])
     setIsProductOpen(false)
     toast.success(`${product.name} added with all addons selected`)
-  }
+  }, [])
 
-  const updateItem = (id: string, updates: Partial<QuotationItem>) => {
-    setItems(items.map((item) => (item.id === id ? { ...item, ...updates } : item)))
-  }
+  const updateItem = useCallback((id: string, updates: Partial<QuotationItem>) => {
+    setItems(items => items.map((item) => (item.id === id ? { ...item, ...updates } : item)))
+  }, [])
 
-  const removeItem = (id: string) => {
-    setItems(items.filter((item) => item.id !== id))
-  }
+  const removeItem = useCallback((id: string) => {
+    setItems(items => items.filter((item) => item.id !== id))
+  }, [])
 
-  const toggleAddon = (itemId: string, addon: { name: string; price: number }) => {
-    setItems(items.map(item => {
+  const toggleAddon = useCallback((itemId: string, addon: { name: string; price: number }) => {
+    setItems(items => items.map(item => {
       if (item.id === itemId) {
         const currentAddons = item.selectedAddons || []
         const exists = currentAddons.find(a => a.name === addon.name)
@@ -209,11 +209,11 @@ export default function QuotationBuilder({ initialProducts, settings, user }: Qu
       }
       return item
     }))
-  }
+  }, [])
 
-  const toggleTerm = (termId: string) => {
-    setTerms(terms.map(t => t.id === termId ? { ...t, selected: !t.selected } : t))
-  }
+  const toggleTerm = useCallback((termId: string) => {
+    setTerms(terms => terms.map(t => t.id === termId ? { ...t, selected: !t.selected } : t))
+  }, [])
 
   const clearQuotation = () => {
     if (!confirm("Are you sure you want to clear this quotation?")) return
