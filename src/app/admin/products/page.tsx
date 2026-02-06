@@ -97,18 +97,23 @@ export default function ProductsPage() {
 
   const fetchData = async () => {
     setLoading(true)
-    const [prodRes, catRes] = await Promise.all([
-      supabase.from("products").select("*").order("created_at", { ascending: false }),
-      supabase.from("categories").select("*").order("name")
-    ])
-    
-    if (prodRes.error) toast.error(prodRes.error.message)
-    else setProducts(prodRes.data || [])
-    
-    if (catRes.error) toast.error(catRes.error.message)
-    else setCategories(catRes.data || [])
-    
-    setLoading(false)
+    try {
+      // Optimized: Parallel fetching with minimal payload
+      const [prodRes, catRes] = await Promise.all([
+        supabase.from("products").select("*").order("created_at", { ascending: false }),
+        supabase.from("categories").select("id, name").order("name")
+      ])
+      
+      if (prodRes.error) toast.error(prodRes.error.message)
+      else setProducts(prodRes.data || [])
+      
+      if (catRes.error) toast.error(catRes.error.message)
+      else setCategories(catRes.data || [])
+    } catch (err: any) {
+      toast.error("Failed to load data")
+    } finally {
+      setLoading(false)
+    }
   }
 
   const handleSave = async (e: React.FormEvent) => {
