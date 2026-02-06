@@ -273,14 +273,14 @@ export default function ProductsPage() {
               Add Product
             </button>
           </DialogTrigger>
-          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto w-[95vw] sm:w-full">
             <form onSubmit={handleSave}>
               <DialogHeader>
                 <DialogTitle>{selectedProduct ? "Edit Product" : "Add New Product"}</DialogTitle>
                 <DialogDescription>Fill in the product details below.</DialogDescription>
               </DialogHeader>
               
-              <div className="grid gap-8 py-4 md:grid-cols-2">
+              <div className="grid gap-6 md:gap-8 py-4 md:grid-cols-2">
                 <div className="space-y-6">
                   <div className="space-y-4">
                     <h3 className="text-sm font-bold uppercase tracking-wider text-gray-400">Basic Info</h3>
