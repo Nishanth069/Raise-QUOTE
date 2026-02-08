@@ -29,7 +29,7 @@ export default async function AdminLayout({
     <SidebarProvider>
       <div className="flex min-h-screen w-full bg-gray-50/50">
         <AdminSidebar />
-        <main className="flex-1 w-0 overflow-y-auto p-4 md:p-8">
+        <main className="flex-1 min-w-0 overflow-y-auto p-4 md:p-8">
           <div className="mx-auto w-full max-w-7xl">
             {children}
           </div>
