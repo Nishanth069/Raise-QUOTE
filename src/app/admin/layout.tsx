@@ -27,10 +27,10 @@ export default async function AdminLayout({
 
   return (
     <SidebarProvider>
-      <div className="flex min-h-screen bg-gray-50/50 overflow-hidden">
+      <div className="flex min-h-screen w-full bg-gray-50/50 overflow-hidden">
         <AdminSidebar />
-        <main className="flex-1 overflow-y-auto p-4 md:p-8">
-          <div className="mx-auto max-w-6xl">
+        <main className="flex-1 w-full overflow-y-auto p-4 md:p-8">
+          <div className="mx-auto w-full max-w-7xl">
             {children}
           </div>
         </main>
