@@ -430,7 +430,10 @@ const getBase64ImageFromURL = (url: string): Promise<string> => {
       canvas.width = img.width * scale
       canvas.height = img.height * scale
       const ctx = canvas.getContext("2d")
-      ctx?.drawImage(img, 0, 0, canvas.width, canvas.height)
+      // Don't fill with black - keep transparent background
+      if (ctx) {
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
+      }
       // Use JPEG with 85% quality for smaller file size
       const dataURL = canvas.toDataURL("image/jpeg", 0.85)
       resolve(dataURL)
@@ -454,7 +457,10 @@ const getBase64ImageWithDimensions = (url: string): Promise<{ base64: string; wi
       canvas.width = img.width * scale
       canvas.height = img.height * scale
       const ctx = canvas.getContext("2d")
-      ctx?.drawImage(img, 0, 0, canvas.width, canvas.height)
+      // Don't fill with black - keep transparent background
+      if (ctx) {
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
+      }
       // Use JPEG with 85% quality for smaller file size
       const dataURL = canvas.toDataURL("image/jpeg", 0.85)
       resolve({ base64: dataURL, width: img.width, height: img.height })
