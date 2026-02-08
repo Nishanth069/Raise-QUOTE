@@ -67,14 +67,12 @@ export const generateQuotationPDF = async ({ quotation, items, settings, user, s
     doc.line(margin, 36, pageWidth - margin, 36)
   }
 
-  // Pre-load all images
+  // Pre-load quotation logo (fixed path)
   let logoBase64 = ""
-  if (settings?.company_logo) {
-    try {
-      logoBase64 = await getBase64ImageFromURL(settings.company_logo)
-    } catch (e) {
-      console.warn("Could not load logo", e)
-    }
+  try {
+    logoBase64 = await getBase64ImageFromURL('/quotation-logo.png')
+  } catch (e) {
+    console.warn("Could not load quotation logo", e)
   }
 
   // Pre-load item images in parallel with optimized caching
@@ -117,35 +115,29 @@ export const generateQuotationPDF = async ({ quotation, items, settings, user, s
     doc.text(`For ${item.name}`, pageWidth / 2, currentY, { align: "center" })
     currentY += 10
 
-    // "To" block only on first page as a table (Quote Number only - no date, no validity)
+    // "To" block - first thing after header
     if (isFirstPage) {
       autoTable(doc, {
         startY: currentY,
-        head: [['To', 'Quote No']],
         body: [[
-          `${quotation.customer_name}\n${quotation.customer_address || ''}`,
-          quotation.quotation_number
+          { content: `To\n\n${quotation.customer_name}${quotation.customer_address ? '\n' + quotation.customer_address : ''}`, styles: { fontStyle: "bold", fontSize: 9 } },
+          { content: `Quote No: ${quotation.quotation_number}\n\nDate: ${new Date(quotation.created_at || Date.now()).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' }).replace(/\//g, '-')}\n\nValidity: ${(() => {
+            const validityDate = new Date(quotation.created_at || Date.now())
+            validityDate.setDate(validityDate.getDate() + 30)
+            return validityDate.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' }).replace(/\//g, '-')
+          })()}`, styles: { fontSize: 9 } }
         ]],
         theme: "grid",
-        headStyles: {
-          fillColor: [240, 240, 240],
-          textColor: [0, 0, 0],
-          lineColor: [0, 0, 0],
-          lineWidth: 0.2,
-          fontStyle: "bold",
-          halign: "center",
-          fontSize: 9
-        },
         bodyStyles: {
           textColor: [0, 0, 0],
           lineColor: [0, 0, 0],
           lineWidth: 0.2,
-          fontSize: 9,
-          cellPadding: 3
+          cellPadding: 4,
+          valign: "top"
         },
         columnStyles: {
           0: { cellWidth: 100, halign: "left" },
-          1: { cellWidth: 65, halign: "center" }
+          1: { cellWidth: 65, halign: "left" }
         },
         margin: { left: margin, right: margin }
       })
@@ -166,7 +158,8 @@ export const generateQuotationPDF = async ({ quotation, items, settings, user, s
 
     const imageData = itemImages[item.id]
     
-    // Get features from item or use defaults
+    // Get features and image format option from item
+    const imageFormat = item.image_format || 'wide' // 'wide' or 'tall'
     const features = item.features || [
       "Accurate method for determining the strength of antibiotic material",
       "Microprocessor based design",
@@ -181,8 +174,8 @@ export const generateQuotationPDF = async ({ quotation, items, settings, user, s
       "IQ/OQ Documentation"
     ]
 
-    // Wide image layout: Image below description, then features
-    if (imageData?.isWide) {
+    // Image layout based on admin selection
+    if (imageFormat === 'wide') {
       // Show wide image below description
       if (imageData.base64) {
         const imgWidth = pageWidth - (margin * 2) - 20
@@ -207,7 +200,7 @@ export const generateQuotationPDF = async ({ quotation, items, settings, user, s
       })
       currentY += 5
     } else {
-      // Normal image layout: Features on left, image on right
+      // Tall/Normal image layout: Features on left, image on right
       doc.setFont("helvetica", "bold")
       doc.setFontSize(9)
       doc.text("FEATURES:", margin, currentY)
@@ -225,12 +218,12 @@ export const generateQuotationPDF = async ({ quotation, items, settings, user, s
         currentY += splitFeature.length * 3.5
       })
 
-      // Normal image on the right
+      // Tall/Normal image on the right
       if (imageData?.base64) {
-        doc.addImage(imageData.base64, "PNG", pageWidth - margin - 55, featureStartY - 3, 50, 40)
+        doc.addImage(imageData.base64, "PNG", pageWidth - margin - 55, featureStartY - 3, 50, 50)
       }
 
-      currentY = Math.max(currentY + 5, featureStartY + 45)
+      currentY = Math.max(currentY + 5, featureStartY + 55)
     }
 
     // Specification
@@ -281,9 +274,9 @@ export const generateQuotationPDF = async ({ quotation, items, settings, user, s
 
     tableRows.push([
       { content: "01", styles: { halign: "center", valign: "middle", fontSize: 9 } },
-      { content: descContent, styles: { halign: "left", valign: "middle", fontSize: 9 } },
+      { content: descContent, styles: { halign: "left", valign: "middle", fontSize: 9, cellPadding: 3 } },
       { content: "1", styles: { halign: "center", valign: "middle", fontSize: 9 } },
-      { content: `${currencySymbol} ${unitPrice.toLocaleString()}/-`, styles: { halign: "right", fontStyle: "bold", valign: "middle", fontSize: 12 } }
+      { content: `${currencySymbol} ${unitPrice.toLocaleString()}/-`, styles: { halign: "right", fontStyle: "bold", valign: "middle", fontSize: 12, cellPadding: 3 } }
     ])
 
     autoTable(doc, {
@@ -349,16 +342,13 @@ export const generateQuotationPDF = async ({ quotation, items, settings, user, s
     { title: "9. MODIFICATION", text: "Any modification of these Terms and Conditions shall be valid only if it is in writing and signed by the authorized representatives of both Supplier and Customer." }
   ]
 
-  termsToDisplay.forEach(t => {
-    doc.setFont("helvetica", "bold")
+  termsToDisplay.forEach((t, idx) => {
+    doc.setFont("helvetica", "normal")
     doc.setFontSize(8)
-    doc.text(t.title, margin, currentY)
-    currentY += 4
-    doc.setFont("helvetica", "italic")
-    doc.setFontSize(8)
-    const splitT = doc.splitTextToSize(t.text, pageWidth - (margin * 2) - 10)
-    doc.text(splitT, margin + 5, currentY)
-    currentY += (splitT.length * 3.5) + 2
+    const fullText = `${t.title}: ${t.text}`
+    const splitT = doc.splitTextToSize(fullText, pageWidth - (margin * 2))
+    doc.text(splitT, margin, currentY)
+    currentY += (splitT.length * 4) + 2
   })
 
   currentY += 10
